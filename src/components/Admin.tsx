@@ -24,7 +24,7 @@ export default function Admin() {
   const [aiTopic, setAiTopic] = useState('');
   const [aiCount, setAiCount] = useState(5);
   const [aiGeneratedQuestions, setAiGeneratedQuestions] = useState<GeneratedQuestion[]>([]);
-  const [hasAiKey] = useState(isAiAvailable());
+  const hasAiKey = isAiAvailable();
   const [inquiryResponse, setInquiryResponse] = useState({ inquiryId: '', response: '' });
   const [notifData, setNotifData] = useState({ title: '', message: '', type: 'news' });
   const [items, setItems] = useState<any[]>([]);
@@ -846,12 +846,7 @@ export default function Admin() {
                            </div>
                         </div>
 
-                        {!hasAiKey ? (
-                          <div className="p-4 bg-indigo-800/40 rounded-2xl border border-white/10 text-indigo-100 text-xs font-bold leading-relaxed">
-                            <p className="mb-2">The AI generator is currently disabled because the API key is not set.</p>
-                            <p className="opacity-60">To enable this: Go to Settings &gt; Secrets and add "GEMINI_API_KEY" with your Google AI key.</p>
-                          </div>
-                        ) : (
+                        {!hasAiKey ? null : (
                           <div className="space-y-6">
                             <div className="space-y-2">
                                <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest pl-1">Enter Topic/Chapter Name</label>

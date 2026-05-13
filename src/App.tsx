@@ -24,30 +24,40 @@ export default function App() {
   const [activeSection, setActiveSection] = useState('lectures');
   const [badges, setBadges] = useState<Record<string, number>>({});
   const [onboarding, setOnboarding] = useState(false);
+  const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
   const [profileData, setProfileData] = useState({ fullName: '', classLevel: '9th' });
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [logoClicks, setLogoClicks] = useState(0);
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(() => {
     return localStorage.getItem('isAdminUnlocked') === 'true';
   });
-  const [logoClicks, setLogoClicks] = useState(0);
+
+  const clickTimeoutRef = React.useRef<any>(null);
 
   const handleLogoClick = () => {
-    const nextClicks = logoClicks + 1;
-    if (nextClicks >= 5) {
-      const newState = !isAdminUnlocked;
-      setIsAdminUnlocked(newState);
-      localStorage.setItem('isAdminUnlocked', String(newState));
-      setLogoClicks(0);
+    if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+    
+    setLogoClicks(prev => {
+      const next = prev + 1;
+      console.log(`Verification progress: ${next}/5`);
       
-      // Play a subtle sound or feedback if possible, but for now just toggle
-      if (newState) {
-        console.log("Admin Portal Unlocked");
+      if (next >= 5) {
+        setIsAdminUnlocked(current => {
+          const newState = !current;
+          localStorage.setItem('isAdminUnlocked', String(newState));
+          console.log(newState ? "Admin Portal Unlocked" : "Admin Portal Locked");
+          return newState;
+        });
+        return 0;
       }
-    } else {
-      setLogoClicks(nextClicks);
-      // Reset clicks after 2 seconds of inactivity
-      setTimeout(() => setLogoClicks(0), 2000);
-    }
+      
+      clickTimeoutRef.current = setTimeout(() => {
+        setLogoClicks(0);
+        console.log("Verification reset");
+      }, 3000);
+      
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -61,6 +71,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        setActiveSection(prev => prev === 'login' ? 'lectures' : prev);
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
@@ -158,28 +169,37 @@ export default function App() {
 
   const handleOnboarding = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || isSavingOnboarding) return;
 
-    const role = user.email === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student';
+    setIsSavingOnboarding(true);
+    const role = user.email?.toLowerCase() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student';
     const newProfile = {
       uid: user.uid,
-      email: user.email,
+      email: user.email || '',
       role,
-      fullName: profileData.fullName,
+      fullName: profileData.fullName.trim(),
       classLevel: profileData.classLevel,
       createdAt: serverTimestamp()
     };
 
     try {
       await setDoc(doc(db, 'users', user.uid), newProfile);
-      setUserProfile(newProfile);
+      
+      // Update local state immediately with the data we just saved
+      const localProfile = { ...newProfile, createdAt: new Date() };
+      setUserProfile(localProfile);
       setOnboarding(false);
+      setActiveSection(prev => prev === 'login' ? 'lectures' : prev);
     } catch (error) {
+      console.error("Onboarding Error:", error);
+      alert("Failed to join academy. Please try again or check your internet connection.");
       handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    } finally {
+      setIsSavingOnboarding(false);
     }
   };
 
-  const role = userProfile?.role || (user?.email === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student');
+  const role = userProfile?.role || (user?.email?.toLowerCase() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student');
 
   if (loading) {
     return (
@@ -226,7 +246,7 @@ export default function App() {
         <React.Suspense fallback={<SectionLoading />}>
           <Admin />
         </React.Suspense>
-      ) : (role === 'admin' ? <Lectures role={role} /> : <Auth />);
+      ) : <Auth />;
       case 'login': return <Auth />;
       default: return <Lectures role={role} />;
     }
@@ -259,7 +279,11 @@ export default function App() {
                   <GraduationCap className="w-10 h-10 text-brand-primary" />
                 </div>
                 <h2 className="text-3xl font-black text-slate-800 mb-2">Welcome to SCA!</h2>
-                <p className="text-slate-500 font-medium">Please complete your profile to continue.</p>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Student Account Discovery</p>
+                </div>
+                <p className="text-slate-500 font-medium italic text-sm">Please finalize your identity record to access lectures and results.</p>
               </div>
 
               <form onSubmit={handleOnboarding} className="space-y-6">
@@ -291,10 +315,20 @@ export default function App() {
 
                 <button 
                   type="submit"
-                  className="vibrant-button w-full py-5 !text-lg !rounded-3xl"
+                  disabled={isSavingOnboarding}
+                  className="vibrant-button w-full py-5 !text-lg !rounded-3xl flex items-center justify-center disabled:opacity-70 disabled:scale-100"
                 >
-                  Join Academy
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  {isSavingOnboarding ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      Join Academy
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </>
+                  )}
                 </button>
               </form>
             </motion.div>
@@ -332,7 +366,10 @@ export default function App() {
         </AnimatePresence>
         
         <footer className="mt-20 pt-10 border-t border-slate-100 text-center">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] select-none">
+          <p 
+            onClick={handleLogoClick}
+            className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] select-none cursor-default active:opacity-50 transition-opacity"
+          >
             Science Coaching Academy Karak • Created by X.4.MV
           </p>
         </footer>

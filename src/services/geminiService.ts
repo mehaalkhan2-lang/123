@@ -22,7 +22,12 @@ function getAiClient() {
 
 export function isAiAvailable(): boolean {
   const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
-  return !!apiKey && apiKey !== "MY_GEMINI_API_KEY";
+  
+  if (!apiKey) return false;
+  if (apiKey === "MY_GEMINI_API_KEY" || apiKey === "" || apiKey === "undefined") return false;
+  
+  // Real Google AI keys usually start with AIza
+  return apiKey.length > 10;
 }
 
 export interface GeneratedQuestion {

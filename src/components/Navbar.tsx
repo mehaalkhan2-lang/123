@@ -43,6 +43,18 @@ export default function Navbar({
 
   return (
     <>
+      <header className="md:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-[40]">
+        <div className="flex items-center gap-3 active:scale-95 transition-transform" onClick={onLogoClick}>
+          <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
+            <GraduationCap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="font-black text-sm leading-tight tracking-tight text-slate-800">SCA KARAK</h1>
+            <p className="text-[8px] text-brand-primary uppercase font-black tracking-widest">Science Academy</p>
+          </div>
+        </div>
+      </header>
+
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 md:hidden py-2 px-4 z-50">
         <AnimatePresence>
           {showInstallButton && (
@@ -100,8 +112,8 @@ export default function Navbar({
             </button>
           )}
         </div>
-        <div className="mt-1 text-center md:hidden">
-          <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.3em]">X.4.MV</p>
+        <div className="mt-1 text-center md:hidden" onClick={onLogoClick}>
+          <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.3em] select-none active:opacity-50 transition-opacity">X.4.MV</p>
         </div>
       </nav>
 

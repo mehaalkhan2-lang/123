@@ -2,16 +2,16 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 let aiClient: GoogleGenAI | null = null;
 
+const GEMINI_API_KEY = (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '') || '';
+
 function getAiClient() {
   if (!aiClient) {
-    const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
-    
-    if (!apiKey || apiKey === "MY_GEMINI_API_KEY") {
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
       throw new Error("Gemini API Key is not configured. Please set GEMINI_API_KEY in the Secrets panel (Settings > Secrets).");
     }
     
     try {
-      aiClient = new GoogleGenAI({ apiKey });
+      aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     } catch (e: any) {
       console.error("Failed to initialize GoogleGenAI:", e);
       throw new Error(`AI Initialization Failed: ${e.message}`);
@@ -21,15 +21,11 @@ function getAiClient() {
 }
 
 export function isAiAvailable(): boolean {
-  // Use a direct reference since Vite's define will replace this literal
-  const apiKey = process.env.GEMINI_API_KEY;
+  if (!GEMINI_API_KEY) return false;
   
-  if (!apiKey) return false;
-  
-  const keyStr = String(apiKey);
+  const keyStr = String(GEMINI_API_KEY);
   if (keyStr === "MY_GEMINI_API_KEY" || keyStr === "" || keyStr === "undefined" || keyStr === "null") return false;
   
-  // Real Google AI keys usually start with AIza and are long
   return keyStr.length > 10;
 }
 
@@ -41,9 +37,9 @@ export interface GeneratedQuestion {
 
 export async function generateMCQs(topic: string, classLevel: string, subject: string, count: number = 5): Promise<GeneratedQuestion[]> {
   const client = getAiClient();
-  const prompt = `Generate ${count} high-quality multiple choice questions (MCQs) for ${classLevel} class ${subject} students on the topic: "${topic}". 
-  Ensure the questions are accurate and relevant to the curriculum.
-  For each question, provide 4 options and specify the index of the correct answer (0-3).`;
+  const prompt = `Generate ${count} MCQs for ${classLevel} ${subject} on "${topic}". 
+  Format: JSON array of objects with "question", "options" (4 strings), and "correctAnswerIndex" (0-3).
+  Level: ${classLevel} academically accurate.`;
 
   try {
     const response = await client.models.generateContent({
@@ -80,8 +76,25 @@ export async function generateMCQs(topic: string, classLevel: string, subject: s
       throw new Error("No response from AI");
     }
 
-    const questions = JSON.parse(response.text.trim());
-    return questions;
+    let jsonStr = response.text.trim();
+    
+    // Clean up potential markdown formatting
+    if (jsonStr.includes('```')) {
+      const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (match && match[1]) {
+        jsonStr = match[1].trim();
+      } else {
+        jsonStr = jsonStr.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
+      }
+    }
+
+    try {
+      const questions = JSON.parse(jsonStr);
+      return questions;
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError, "Raw string:", jsonStr);
+      throw new Error("Failed to parse AI response. Please try generating again.");
+    }
   } catch (error) {
     console.error("AI Generation Error:", error);
     throw error;

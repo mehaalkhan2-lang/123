@@ -29,32 +29,27 @@ export default function App() {
     return localStorage.getItem('isAdminUnlocked') === 'true';
   });
 
-  const clickTimeoutRef = React.useRef<any>(null);
+  useEffect(() => {
+    if (logoClicks >= 5) {
+      if ('vibrate' in navigator) navigator.vibrate([10, 50, 10]);
+      setIsAdminUnlocked(current => {
+        const newState = !current;
+        localStorage.setItem('isAdminUnlocked', String(newState));
+        return newState;
+      });
+      setLogoClicks(0);
+    }
+
+    if (logoClicks > 0) {
+      const timer = setTimeout(() => {
+        setLogoClicks(0);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [logoClicks]);
 
   const handleLogoClick = () => {
-    if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
-    
-    setLogoClicks(prev => {
-      const next = prev + 1;
-      console.log(`Verification progress: ${next}/5`);
-      
-      if (next >= 5) {
-        setIsAdminUnlocked(current => {
-          const newState = !current;
-          localStorage.setItem('isAdminUnlocked', String(newState));
-          console.log(newState ? "Admin Portal Unlocked" : "Admin Portal Locked");
-          return newState;
-        });
-        return 0;
-      }
-      
-      clickTimeoutRef.current = setTimeout(() => {
-        setLogoClicks(0);
-        console.log("Verification reset");
-      }, 3000);
-      
-      return next;
-    });
+    setLogoClicks(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -213,7 +208,7 @@ export default function App() {
           <Notifications role={role} />
         </React.Suspense>
       );
-      case 'admin': return (role === 'admin' && isAdminUnlocked) ? (
+      case 'admin': return isAdminUnlocked || role === 'admin' ? (
         <React.Suspense fallback={<SectionLoading />}>
           <Admin />
         </React.Suspense>

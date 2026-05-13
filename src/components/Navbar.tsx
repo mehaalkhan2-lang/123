@@ -37,14 +37,14 @@ export default function Navbar({
     { id: 'notifications', label: 'Updates', icon: Bell, emoji: '🔔' },
   ];
 
-  if (role === 'admin' && isAdminUnlocked) {
+  if (isAdminUnlocked || role === 'admin') {
     navItems.push({ id: 'admin', label: 'Admin', icon: LayoutDashboard, emoji: '📊' });
   }
 
   return (
     <>
       <header className="md:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-[40]">
-        <div className="flex items-center gap-3 active:scale-95 transition-transform" onClick={onLogoClick}>
+        <div className="flex items-center gap-3 active:scale-95 transition-transform cursor-pointer" onClick={onLogoClick}>
           <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
@@ -113,13 +113,13 @@ export default function Navbar({
           )}
         </div>
         <div className="mt-1 text-center md:hidden" onClick={onLogoClick}>
-          <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.3em] select-none active:opacity-50 transition-opacity">X.4.MV</p>
+          <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.3em] select-none active:opacity-50 transition-opacity cursor-pointer">X.4.MV</p>
         </div>
       </nav>
 
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-72 bg-brand-secondary flex-col text-white shadow-2xl z-50">
         <div className="p-8">
-          <div className="flex items-center gap-3 select-none cursor-default" onClick={onLogoClick}>
+          <div className="flex items-center gap-3 select-none cursor-pointer" onClick={onLogoClick}>
             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-inner group">
               <GraduationCap className="w-8 h-8 text-brand-primary group-hover:scale-110 transition-transform" />
             </div>

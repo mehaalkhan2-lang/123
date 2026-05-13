@@ -386,8 +386,8 @@ export default function Admin() {
             <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Current User</p>
-            <p className="text-sm font-bold text-slate-700">{user?.email || 'Not logged in'}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</p>
+            <p className="text-sm font-bold text-slate-700">{isAdminUser ? 'Authorized Admin' : 'Unauthorized Access'}</p>
           </div>
         </div>
       </header>
@@ -845,6 +845,12 @@ export default function Admin() {
 
                         {!hasAiKey ? null : (
                           <div className="space-y-6">
+                            {status && (status.message.includes('DEPLOY') || status.message.includes('generated') || status.message.includes('AI Magic')) && (
+                               <div className={`p-4 rounded-xl text-xs font-bold ${status.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                                 {status.message}
+                               </div>
+                            )}
+
                             <div className="space-y-2">
                                <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest pl-1">Enter Topic/Chapter Name</label>
                                <input 

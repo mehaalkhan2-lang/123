@@ -21,13 +21,16 @@ function getAiClient() {
 }
 
 export function isAiAvailable(): boolean {
-  const apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
+  // Use a direct reference since Vite's define will replace this literal
+  const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) return false;
-  if (apiKey === "MY_GEMINI_API_KEY" || apiKey === "" || apiKey === "undefined") return false;
   
-  // Real Google AI keys usually start with AIza
-  return apiKey.length > 10;
+  const keyStr = String(apiKey);
+  if (keyStr === "MY_GEMINI_API_KEY" || keyStr === "" || keyStr === "undefined" || keyStr === "null") return false;
+  
+  // Real Google AI keys usually start with AIza and are long
+  return keyStr.length > 10;
 }
 
 export interface GeneratedQuestion {

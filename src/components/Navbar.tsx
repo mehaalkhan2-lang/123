@@ -108,7 +108,7 @@ export default function Navbar({
               <div className={`p-2 rounded-xl ${activeSection === 'login' ? 'bg-indigo-50' : ''}`}>
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <span className="text-[10px] font-bold">Portal</span>
+              <span className="text-[10px] font-bold">Admin</span>
             </button>
           )}
         </div>
@@ -217,7 +217,7 @@ export default function Navbar({
                 className="w-full flex items-center justify-center gap-3 bg-white text-brand-primary py-4 rounded-2xl transition-all font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-900/40 active:scale-95"
              >
                 <ShieldCheck className="w-4 h-4" />
-                Sign In
+                Admin Login
              </button>
              <button 
                 onClick={() => setShowInstallHelp(true)}

@@ -17,14 +17,13 @@ interface Inquiry {
   answeredAt?: any;
 }
 
-export default function HelpDesk({ role }: { role: string | null }) {
+export default function HelpDesk({ role, user }: { role: string | null, user: any }) {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [question, setQuestion] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [activeResponse, setActiveResponse] = useState<{ id: string, text: string } | null>(null);
 
-  const user = auth.currentUser;
   const isAdmin = role === 'admin';
 
   useEffect(() => {
@@ -104,33 +103,51 @@ export default function HelpDesk({ role }: { role: string | null }) {
           <div className="md:col-span-1">
             <div className="vibrant-card !p-8 border-t-8 border-t-brand-primary sticky top-24">
               <h2 className="text-xl font-black text-slate-800 mb-6 tracking-tight">Ask a Question</h2>
-              <form onSubmit={handleSubmitQuestion} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Your Inquiry</label>
-                  <textarea 
-                    required
-                    rows={6}
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="e.g. Can you explain the 3rd Law of Motion again?"
-                    className="vibrant-input resize-none"
-                  />
+              
+              {!user ? (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 bg-brand-secondary/5 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <User className="w-8 h-8 text-brand-primary" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-600 mb-6 leading-relaxed">Please sign in to send questions and receive expert help.</p>
+                  <button 
+                    onClick={() => (window as any).setActiveSection('login')}
+                    className="vibrant-button w-full py-4 !rounded-2xl flex items-center justify-center gap-2"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Sign In
+                  </button>
                 </div>
-                <button
-                  type="submit"
-                  disabled={submitting || !question.trim()}
-                  className="vibrant-button w-full py-4 !rounded-2xl"
-                >
-                  {submitting ? (
-                    <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Submit Question
-                    </>
-                  )}
-                </button>
-              </form>
+              ) : (
+                <form onSubmit={handleSubmitQuestion} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Your Inquiry</label>
+                    <textarea 
+                      required
+                      rows={6}
+                      value={question}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      placeholder="e.g. Can you explain the 3rd Law of Motion again?"
+                      className="vibrant-input resize-none"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submitting || !question.trim()}
+                    className="vibrant-button w-full py-4 !rounded-2xl"
+                  >
+                    {submitting ? (
+                      <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Submit Question
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+              
               <div className="mt-8 p-4 bg-indigo-50 rounded-2xl border border-indigo-100 italic text-[11px] text-indigo-600 font-bold leading-relaxed">
                 Response times may vary. Administration usually responds within 24 hours.
               </div>

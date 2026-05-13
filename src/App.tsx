@@ -6,7 +6,7 @@ import { handleFirestoreError, OperationType } from './lib/errorHandlers';
 import Auth from './components/Auth';
 import Navbar from './components/Navbar';
 import Lectures from './components/Lectures';
-import { GraduationCap, ArrowRight } from 'lucide-react';
+import { GraduationCap } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 
@@ -23,9 +23,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('lectures');
   const [badges, setBadges] = useState<Record<string, number>>({});
-  const [onboarding, setOnboarding] = useState(false);
-  const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
-  const [profileData, setProfileData] = useState({ fullName: '', classLevel: '9th' });
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [logoClicks, setLogoClicks] = useState(0);
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(() => {
@@ -61,6 +58,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    (window as any).setActiveSection = handleSectionClick;
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -75,21 +73,26 @@ export default function App() {
         try {
           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
           if (userDoc.exists()) {
-            const profile = userDoc.data();
-            setUserProfile(profile);
-            if (!profile.fullName || !profile.classLevel) {
-              setOnboarding(true);
-            }
+            setUserProfile(userDoc.data());
           } else {
-            setOnboarding(true);
+            // Auto-create profile without asking for details
+            const role = currentUser.email?.toLowerCase() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student';
+            const newProfile = {
+              uid: currentUser.uid,
+              email: currentUser.email || '',
+              role,
+              fullName: currentUser.displayName || 'Discovery Student',
+              classLevel: '9th', // Default class
+              createdAt: serverTimestamp()
+            };
+            await setDoc(doc(db, 'users', currentUser.uid), newProfile);
+            setUserProfile(newProfile);
           }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
-          // Still allow access but maybe show a generic error later
+          console.error("Error fetching/creating user profile:", error);
         }
       } else {
         setUserProfile(null);
-        setOnboarding(false);
       }
       setLoading(false);
     });
@@ -167,38 +170,6 @@ export default function App() {
     }
   };
 
-  const handleOnboarding = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || isSavingOnboarding) return;
-
-    setIsSavingOnboarding(true);
-    const role = user.email?.toLowerCase() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student';
-    const newProfile = {
-      uid: user.uid,
-      email: user.email || '',
-      role,
-      fullName: profileData.fullName.trim(),
-      classLevel: profileData.classLevel,
-      createdAt: serverTimestamp()
-    };
-
-    try {
-      await setDoc(doc(db, 'users', user.uid), newProfile);
-      
-      // Update local state immediately with the data we just saved
-      const localProfile = { ...newProfile, createdAt: new Date() };
-      setUserProfile(localProfile);
-      setOnboarding(false);
-      setActiveSection(prev => prev === 'login' ? 'lectures' : prev);
-    } catch (error) {
-      console.error("Onboarding Error:", error);
-      alert("Failed to join academy. Please try again or check your internet connection.");
-      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
-    } finally {
-      setIsSavingOnboarding(false);
-    }
-  };
-
   const role = userProfile?.role || (user?.email?.toLowerCase() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student');
 
   if (loading) {
@@ -232,11 +203,11 @@ export default function App() {
           <Quizzes user={user} />
         </React.Suspense>
       );
-      case 'helpdesk': return user ? (
+      case 'helpdesk': return (
         <React.Suspense fallback={<SectionLoading />}>
-          <HelpDesk role={role} />
+          <HelpDesk role={role} user={user} />
         </React.Suspense>
-      ) : <Auth />;
+      );
       case 'notifications': return (
         <React.Suspense fallback={<SectionLoading />}>
           <Notifications role={role} />
@@ -261,81 +232,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 md:pb-0 md:pl-72">
-      <AnimatePresence>
-        {onboarding && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-brand-secondary flex items-center justify-center p-6"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="w-full max-w-md bg-white rounded-[40px] p-10 sm:p-12 shadow-2xl"
-            >
-              <div className="text-center mb-8">
-                <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <GraduationCap className="w-10 h-10 text-brand-primary" />
-                </div>
-                <h2 className="text-3xl font-black text-slate-800 mb-2">Welcome to SCA!</h2>
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Student Account Discovery</p>
-                </div>
-                <p className="text-slate-500 font-medium italic text-sm">Please finalize your identity record to access lectures and results.</p>
-              </div>
-
-              <form onSubmit={handleOnboarding} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Your Full Name</label>
-                  <input 
-                    required
-                    type="text"
-                    value={profileData.fullName}
-                    onChange={(e) => setProfileData({...profileData, fullName: e.target.value})}
-                    placeholder="e.g. Mehaal Khan"
-                    className="vibrant-input"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Your Class</label>
-                  <select 
-                    value={profileData.classLevel}
-                    onChange={(e) => setProfileData({...profileData, classLevel: e.target.value})}
-                    className="vibrant-input cursor-pointer"
-                  >
-                    <option value="9th">9th Class</option>
-                    <option value="10th">10th Class</option>
-                    <option value="11th">11th Class</option>
-                    <option value="12th">12th Class</option>
-                  </select>
-                </div>
-
-                <button 
-                  type="submit"
-                  disabled={isSavingOnboarding}
-                  className="vibrant-button w-full py-5 !text-lg !rounded-3xl flex items-center justify-center disabled:opacity-70 disabled:scale-100"
-                >
-                  {isSavingOnboarding ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                      <span>Processing...</span>
-                    </>
-                  ) : (
-                    <>
-                      Join Academy
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </>
-                  )}
-                </button>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <Navbar 
         user={user ? { 
           uid: user.uid, 

@@ -8,7 +8,7 @@ import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { generateMCQs, GeneratedQuestion, isAiAvailable } from '../services/geminiService';
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState<'lectures' | 'results' | 'notes' | 'quizzes' | 'inquiries' | 'notifications' | 'users'>('lectures');
+  const [activeTab, setActiveTab] = useState<'lectures' | 'results' | 'notes' | 'quizzes' | 'inquiries' | 'notifications'>('lectures');
   const user = auth.currentUser;
   const isAdminUser = user?.email === 'mehaalkhan.2@gmail.com';
   const [loading, setLoading] = useState(false);
@@ -32,12 +32,10 @@ export default function Admin() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    let q;
     let collectionName = activeTab as string;
+    let q;
 
-    if (activeTab === 'users') {
-      q = query(collection(db, 'users'), orderBy('fullName', 'asc'));
-    } else if (activeTab === 'inquiries') {
+    if (activeTab === 'inquiries') {
       q = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'));
     } else {
       q = query(collection(db, collectionName), orderBy('date', 'desc'));
@@ -373,7 +371,6 @@ export default function Admin() {
     { id: 'quizzes', label: 'Quizzes', icon: ShieldCheck },
     { id: 'inquiries', label: 'Help Desk', icon: Clock },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'users', label: 'Students', icon: User },
   ];
 
   return (
@@ -428,7 +425,7 @@ export default function Admin() {
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-10 gap-4">
               <h2 className="text-3xl font-black text-slate-800 tracking-tight">
-                {activeTab === 'users' ? 'Registered Students' : `Post New ${activeTab.slice(0, -1)}`}
+                {`Post New ${activeTab.slice(0, -1)}`}
               </h2>
               {status && (
                 <motion.div
@@ -444,8 +441,8 @@ export default function Admin() {
               )}
             </div>
 
-            {activeTab !== 'users' ? (
-              <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Form Content */}
+                <form onSubmit={handleSubmit} className="space-y-8">
                 {activeTab === 'lectures' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1087,28 +1084,12 @@ export default function Admin() {
                   </button>
                 )}
               </form>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-indigo-50 rounded-3xl border border-indigo-100">
-                  <div>
-                    <h3 className="text-xl font-black text-indigo-900">Student Directory</h3>
-                    <p className="text-xs text-indigo-600 font-bold uppercase tracking-widest mt-1">SCA Karak Enrollment List</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="px-5 py-2 bg-white rounded-2xl shadow-sm border border-indigo-100 flex flex-col items-center">
-                      <span className="text-2xl font-black text-indigo-600">{items.length}</span>
-                      <span className="text-[8px] font-black text-indigo-300 uppercase">Enrolled</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Existing Content List */}
             <div className="mt-16 pt-10 border-t-2 border-slate-50">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-black text-slate-800 tracking-tight">
-                  {activeTab === 'users' ? 'Managed Directory' : `Manage Existing ${activeTab}`}
+                  {`Manage Existing ${activeTab}`}
                 </h3>
                 <span className="px-4 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">
                   {items.length} Total
@@ -1165,17 +1146,10 @@ export default function Admin() {
                           <p className="mt-1 text-xs text-slate-500 italic line-clamp-1">Q: {item.question}</p>
                         )}
                         <div className="flex items-center gap-4 text-xs text-slate-400 font-bold mt-2">
-                          {activeTab === 'users' ? (
-                            <span className="flex items-center gap-1">
-                               <FileText className="w-3 h-3" />
-                               {item.email}
-                            </span>
-                          ) : (
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
                               {(item.date?.toDate || item.createdAt?.toDate) ? (item.date || item.createdAt).toDate().toLocaleDateString() : 'Just now'}
                             </span>
-                          )}
                           {item.studentName && (
                             <span className="flex items-center gap-1">
                               <User className="w-3 h-3" />
@@ -1186,7 +1160,7 @@ export default function Admin() {
                       </div>
                       <button
                         onClick={() => handleDelete(item.id)}
-                        disabled={deleteLoading === item.id || (activeTab === 'users' && item.email === 'mehaalkhan.2@gmail.com')}
+                        disabled={deleteLoading === item.id}
                         className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all disabled:opacity-20"
                         title="Delete entry"
                       >

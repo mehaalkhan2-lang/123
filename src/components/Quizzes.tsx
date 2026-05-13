@@ -80,10 +80,6 @@ export default function Quizzes({ user }: QuizzesProps) {
   }, [user]);
 
   const startQuiz = async (quiz: Quiz) => {
-    if (!user) {
-      alert("Please sign in to take practice tests and track your progress.");
-      return;
-    }
     setLoading(true);
     setErrorStatus(null);
     try {
@@ -103,8 +99,7 @@ export default function Quizzes({ user }: QuizzesProps) {
       setQuizFinished(false);
     } catch (error) {
       console.error("Error starting quiz:", error);
-      setErrorStatus('Unable to open the test. Please check your internet connection or try logging in again.');
-      // handleFirestoreError(error, OperationType.LIST, `quizzes/${quiz.id}/questions`);
+      setErrorStatus('Unable to open the test. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
@@ -346,7 +341,17 @@ export default function Quizzes({ user }: QuizzesProps) {
           
           <div className="vibrant-card !p-6 !bg-brand-secondary text-white border-none shadow-xl">
              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                {attempts.length === 0 ? (
+                {!user ? (
+                  <div className="text-center py-10">
+                    <p className="text-white/40 font-bold italic mb-4">Login to save your scores</p>
+                    <button 
+                      onClick={() => (window as any).setActiveSection('login')}
+                      className="px-6 py-2 bg-white text-brand-primary rounded-xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all"
+                    >
+                      Sign In Now
+                    </button>
+                  </div>
+                ) : attempts.length === 0 ? (
                   <p className="text-white/40 font-bold text-center py-10 italic">No tests attempted yet.</p>
                 ) : (
                   attempts.map((attempt) => (

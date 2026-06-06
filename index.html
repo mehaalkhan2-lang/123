@@ -3,38 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SCA Academy | Satirical Commission of Academy</title>
-    <meta name="description" content="Welcome to SCA Academy (Satirical Commission of Academy). The premier destination for academic disaster and intentional confusion. Join 1200+ victims today!" />
-    <meta name="keywords" content="SCA Academy, Satirical Commission of Academy, Academic Commission Pakistan, Musanif Academy, SCAM Academy" />
-    <meta property="og:title" content="SCA Academy | Satirical Commission of Academy" />
-    <meta property="og:description" content="Join the chaos at SCA Academy. We specialize in academic destruction and linguistic confusion." />
-    <meta property="og:type" content="website" />
-    <meta name="robots" content="index, follow" />
-    <meta name="google-site-verification" content="nFphkuKFLm4NJd" />
+    <title>SCA Karak - Academy Management System</title>
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#f26c4f" />
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1043/1043477.png" />
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1043/1043477.png" />
-    <!-- Service worker registration removed for stability in preview -->
+    <meta name="theme-color" content="#4F46E5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      // Early error handler for custom domain debugging
-      window.onerror = function(message, source, lineno, colno, error) {
-        var root = document.getElementById('root');
-        if (root && (root.innerHTML === '' || root.innerHTML.includes('loading') || root.innerHTML.length < 100)) {
-          root.innerHTML = '<div style="padding:40px;font-family:sans-serif;text-align:center;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#fff;color:#333;"><div style="max-width:600px;">' +
-            '<h1 style="color:#f26c4f;font-size:2rem;">Startup Error</h1>' +
-            '<p style="color:#666;">If your custom domain shows a white screen, check the following:</p>' +
-            '<div style="text-align:left;background:#f9f9f9;padding:20px;border-radius:8px;border:1px solid #eee;">' +
-            '<b>1. Firebase Authorized Domains:</b> Add <u>' + window.location.hostname + '</u> to Firebase Console > Authentication > Settings.<br><br>' +
-            '<b>2. HTTPS Required:</b> Firebase services often fail on plain HTTP.<br><br>' +
-            '<b>3. Console Error:</b> ' + message + '</div>' +
-            '</div></div>';
-        }
-      };
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

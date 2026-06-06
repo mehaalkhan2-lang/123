@@ -1,6 +1,6 @@
 {
-  "name": "SCA Academy",
-  "description": "SCA Academy (Satirical Commission of Academy) - A satirical educational portal themed around 'academic destruction' with full Urdu support. Join the Academic Commission for a unique experience.",
+  "name": "SCA Karak - Academy Management System",
+  "description": "Educational platform for Science Coaching Academy Karak featuring daily lectures, exam results, and PDF notes management.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

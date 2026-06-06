@@ -7,10 +7,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { generateMCQs, GeneratedQuestion, isAiAvailable } from '../services/geminiService';
 
-export default function Admin({ user, isAdminUnlocked = false }: { user: any, isAdminUnlocked?: boolean }) {
+export default function Admin({ user }: { user: any }) {
   const isAdminUser = user?.email?.toLowerCase().trim() === 'mehaalkhan.2@gmail.com';
   
-  if (!isAdminUnlocked && (!user || !isAdminUser)) {
+  if (!user || !isAdminUser) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-6">
         <motion.div 

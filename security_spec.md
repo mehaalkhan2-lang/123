@@ -1,25 +1,26 @@
-# Security Specification for Achievements Gallery
+# Security Specification for SCA Karak
 
 ## Data Invariants
-- A gallery image must have a valid URL.
-- Only the specific user `mehaalkhan.2@gmail.com` can upload images.
-- All users can view images.
-- Timestamps must be server-generated.
-- Emails must be verified (if login is used).
+1. A **User** document role can only be set to "admin" if the user email is the authorized admin email (`mehaalkhan.2@gmail.com`).
+2. **Lectures**, **Results**, **Notes**, and **Notifications** can only be created, updated, or deleted by an Admin.
+3. Students can read `Lectures`, `Notes`, and `Notifications`.
+4. Students can only read `Results` that belong to them (matched by email).
+5. All timestamps must be server-generated.
+6. All IDs must be valid (not too long, safe characters).
 
-## The "Dirty Dozen" Payloads
-1. **Identity Spoofing**: Attempt to upload as `evil@hacker.com`.
-2. **State Shortcutting**: Attempt to set a manual `createdAt` in the past.
-3. **Ghost Fields**: Adding `isVerified: true` to the document.
-4. **ID Poisoning**: Using a 2MB string as `imageId`.
-5. **No Auth**: Attempting to upload without being signed in.
-6. **Insecure List**: Attempting to list all images without the right query (if rules were restricted).
-7. **PII Leak**: If we stored phone numbers, attempting to read them.
-8. **Resource Exhaustion**: Uploading a 1MB string into the `alt` field.
-9. **Email Spoofing**: Claiming to be `mehaalkhan.2@gmail.com` without `email_verified == true`.
-10. **Shadow Update**: Updating a field that should be immutable (like `uploadedBy`).
-11. **Type Poisoning**: Sending an integer for the `url` field.
-12. **Orphaned Writes**: Creating an image linked to a non-existent parent (not applicable here as it's a top-level collection).
+## The Dirty Dozen Payloads
+1. **Malicious Admin Promotion**: A student tries to update their own role to "admin".
+2. **Ghost Note**: Creating a note with a 1MB string in the title.
+3. **Orphaned Result**: Creating a result without a subject.
+4. **Identity Spoofing**: User A trying to read User B's private result.
+5. **Unauthorized Lecture**: Non-admin trying to post a fake lecture link.
+6. **Timeline Hijack**: Sending a notification with a date in the future (client-provided).
+7. **Role Escalation via Creation**: New user trying to register with `role: 'admin'`.
+8. **Shadow Field**: Adding a hidden `isVerified: true` field to a user profile.
+9. **Junk ID Poisoning**: Trying to create a doc with a 2KB ID string.
+10. **Delete All**: Student trying to delete the entire lectures collection.
+11. **Update PII**: User trying to change another user's email field.
+12. **Blind List Query**: Trying to list all results without a filter, hoping the rules leak other students' data.
 
-## The Test Runner
-A `firestore.rules.test.ts` would normally go here, but I will implement the rules directly following the principles.
+## Test Runner (Logic Overview)
+The `firestore.rules` will be tested against these invariants using the standard Firebase simulator logic. I will verify that `PERMISSION_DENIED` is returned for all unauthorized cases.

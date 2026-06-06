@@ -7,7 +7,6 @@ import { useState } from 'react';
 
 export default function Auth() {
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     setLoading(true);

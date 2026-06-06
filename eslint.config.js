@@ -5,12 +5,10 @@ export default [
     ignores: ['dist/**/*']
   },
   {
-    files: ['firestore.rules', 'DRAFT_firestore.rules'],
+    files: ['*.rules'],
     plugins: {
-      'firebase-security-rules': firebaseRulesPlugin
-    },
-    rules: {
-      ...firebaseRulesPlugin.configs['flat/recommended'].rules
+      'security-rules': firebaseRulesPlugin
     }
-  }
+  },
+  firebaseRulesPlugin.configs['flat/recommended']
 ];

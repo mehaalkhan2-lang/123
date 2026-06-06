@@ -2,16 +2,16 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 let aiClient: GoogleGenAI | null = null;
 
-const GEMINI_API_KEY = (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '') || '';
-
 function getAiClient() {
   if (!aiClient) {
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === "MY_GEMINI_API_KEY") {
-      throw new Error("Gemini API Key is not configured. Please set GEMINI_API_KEY in the Secrets panel (Settings > Secrets).");
+    const apiKey = process.env.APP_GEMINI_KEY || process.env.GEMINI_API_KEY;
+    
+    if (!apiKey || apiKey === "MY_GEMINI_API_KEY" || apiKey === "" || apiKey === "undefined") {
+      throw new Error("Gemini AI is not configured. Please set APP_GEMINI_KEY in the Secrets panel (Settings > Secrets tab).");
     }
     
     try {
-      aiClient = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      aiClient = new GoogleGenAI({ apiKey });
     } catch (e: any) {
       console.error("Failed to initialize GoogleGenAI:", e);
       throw new Error(`AI Initialization Failed: ${e.message}`);
@@ -21,10 +21,11 @@ function getAiClient() {
 }
 
 export function isAiAvailable(): boolean {
-  if (!GEMINI_API_KEY) return false;
+  const apiKey = process.env.APP_GEMINI_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) return false;
   
-  const keyStr = String(GEMINI_API_KEY);
-  if (keyStr === "MY_GEMINI_API_KEY" || keyStr === "" || keyStr === "undefined" || keyStr === "null") return false;
+  const keyStr = String(apiKey);
+  if (keyStr === "MY_GEMINI_API_KEY" || keyStr === "" || keyStr === "undefined" || keyStr === "null" || keyStr === "APP_GEMINI_KEY") return false;
   
   return keyStr.length > 10;
 }

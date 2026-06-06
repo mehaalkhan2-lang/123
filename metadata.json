@@ -1,6 +1,6 @@
 {
-  "name": "Science Coaching Academy (SCA)",
-  "description": "Science Coaching Academy (SCA) - Modern educational app for Class 8-12. Whiteboard uploads, notes management, exam schedules, and results tracker.",
+  "name": "SCA Karak - Academy Management System",
+  "description": "Educational platform for Science Coaching Academy Karak featuring daily lectures, exam results, and PDF notes management.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

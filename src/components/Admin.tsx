@@ -7,10 +7,36 @@ import { motion, AnimatePresence } from 'motion/react';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { generateMCQs, GeneratedQuestion, isAiAvailable } from '../services/geminiService';
 
-export default function Admin() {
+export default function Admin({ user, isAdminUnlocked = false }: { user: any, isAdminUnlocked?: boolean }) {
+  const isAdminUser = user?.email?.toLowerCase().trim() === 'mehaalkhan.2@gmail.com';
+  
+  if (!isAdminUnlocked && (!user || !isAdminUser)) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="vibrant-card !p-12 text-center max-w-sm"
+        >
+          <div className="w-20 h-20 bg-rose-50 rounded-[32px] flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck className="w-10 h-10 text-rose-500" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-800 mb-2 uppercase tracking-tight">Access Forbidden</h2>
+          <p className="text-slate-500 font-medium text-sm leading-relaxed mb-8">
+            This module is restricted to system administrators. Your account ({user?.email || 'Unknown User'}) does not have permission.
+          </p>
+          <button 
+            onClick={() => (window as any).setActiveSection('lectures')}
+            className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-brand-primary transition-all"
+          >
+            Return to Lectures
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
   const [activeTab, setActiveTab] = useState<'lectures' | 'results' | 'notes' | 'quizzes' | 'inquiries' | 'notifications'>('lectures');
-  const user = auth.currentUser;
-  const isAdminUser = user?.email === 'mehaalkhan.2@gmail.com';
   const [loading, setLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -230,6 +256,10 @@ export default function Admin() {
   };
 
   const handleCreateQuiz = async () => {
+    if (!user) {
+      setStatus({ type: 'error', message: 'You must be logged in to create content.' });
+      return;
+    }
     if (!quizData.title.trim()) {
       setStatus({ type: 'error', message: 'Quiz Title is required to create a new practice test.' });
       return;
@@ -280,6 +310,10 @@ export default function Admin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      setStatus({ type: 'error', message: 'Auth session missing. Please refresh.' });
+      return;
+    }
     if (activeTab === 'quizzes') return; // Handled by specific functions
     setLoading(true);
     setStatus(null);
@@ -838,12 +872,27 @@ export default function Admin() {
                            <div>
                              <h3 className="text-xl font-black text-white uppercase tracking-widest leading-none">AI MCQ Generator</h3>
                              <p className="text-indigo-300 text-[10px] font-black uppercase tracking-widest mt-1">
-                               {hasAiKey ? 'Powered by Google Gemini' : 'Configuration Required'}
+                               {hasAiKey ? 'Powered by Google Gemini' : 'AI Setup Required in Secrets Tab'}
                              </p>
                            </div>
                         </div>
 
-                        {!hasAiKey ? null : (
+                        {!hasAiKey ? (
+                          <div className="p-8 bg-indigo-800/50 rounded-2xl border-2 border-indigo-700/50 text-center">
+                            <AlertCircle className="w-10 h-10 text-amber-400 mx-auto mb-4" />
+                            <h4 className="text-white font-black uppercase tracking-widest mb-2">AI API Key Missing</h4>
+                            <p className="text-indigo-200 text-[10px] font-medium mb-6 leading-relaxed">
+                              You are logged in as admin, but the AI API Key is not set. 
+                              Go to **Settings &gt; Secrets** in the panel and add `APP_GEMINI_KEY`.
+                            </p>
+                            <button 
+                              onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
+                              className="px-6 py-3 bg-brand-primary text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-secondary transition-all"
+                            >
+                              Get Free API Key
+                            </button>
+                          </div>
+                        ) : (
                           <div className="space-y-6">
                             {status && (status.message.includes('DEPLOY') || status.message.includes('generated') || status.message.includes('AI Magic')) && (
                                <div className={`p-4 rounded-xl text-xs font-bold ${status.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>

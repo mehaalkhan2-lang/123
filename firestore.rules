@@ -12,14 +12,15 @@ service cloud.firestore {
     }
 
     function isEmailVerified() {
-      return isSignedIn() && (request.auth.token.get('email_verified', false) == true || request.auth.token.get('email', '') == 'mehaalkhan.2@gmail.com');
+      let email = request.auth.token.get('email', '');
+      return isSignedIn() && (request.auth.token.get('email_verified', false) == true || email.lower() == 'mehaalkhan.2@gmail.com');
     }
 
     function isAdmin() {
+      let email = request.auth.token.get('email', '');
       return isSignedIn() && (
-        request.auth.token.email == 'mehaalkhan.2@gmail.com' ||
-        request.auth.token.get('email', '') == 'mehaalkhan.2@gmail.com' ||
-        request.auth.uid == 'oU72Es8nYDfYzlHDbSROt667yCv2' ||
+        email.lower() == 'mehaalkhan.2@gmail.com' ||
+        request.auth.token.get('email_verified', false) == true && email.lower() == 'mehaalkhan.2@gmail.com' ||
         exists(/databases/$(database)/documents/admins/$(request.auth.uid))
       );
     }
@@ -89,7 +90,8 @@ service cloud.firestore {
              data.title is string && data.title.size() <= 1000 &&
              data.classLevel is string &&
              data.subject is string &&
-             data.createdAt is timestamp;
+             data.createdAt is timestamp &&
+             (data.has('questionCount') ? data.questionCount is int : true);
     }
 
     function isValidQuestion(data) {

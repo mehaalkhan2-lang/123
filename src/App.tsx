@@ -71,10 +71,10 @@ export default function App() {
             setUserProfile(userDoc.data());
           } else {
             // Auto-create profile without asking for details
-            const role = currentUser.email?.toLowerCase() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student';
+            const role = currentUser.email?.toLowerCase().trim() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student';
             const newProfile = {
               uid: currentUser.uid,
-              email: currentUser.email || '',
+              email: (currentUser.email || '').toLowerCase().trim(),
               role,
               fullName: currentUser.displayName || 'Discovery Student',
               classLevel: '9th', // Default class
@@ -165,7 +165,7 @@ export default function App() {
     }
   };
 
-  const role = userProfile?.role || (user?.email?.toLowerCase() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student');
+  const role = userProfile?.role || (user?.email?.toLowerCase().trim() === 'mehaalkhan.2@gmail.com' ? 'admin' : 'student');
 
   if (loading) {
     return (
@@ -210,7 +210,7 @@ export default function App() {
       );
       case 'admin': return isAdminUnlocked || role === 'admin' ? (
         <React.Suspense fallback={<SectionLoading />}>
-          <Admin />
+          <Admin user={user} isAdminUnlocked={isAdminUnlocked} />
         </React.Suspense>
       ) : <Auth />;
       case 'login': return <Auth />;

@@ -1,21 +1,27 @@
 import { auth, db } from '../lib/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { GraduationCap, ShieldCheck } from 'lucide-react';
+import { GraduationCap, ShieldCheck, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
 
 export default function Auth() {
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     setLoading(true);
+    setError(null);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error('Login Error:', error);
-      alert('Login failed: ' + error.message);
+      if (error.code === 'auth/unauthorized-domain') {
+        setError('DOMAIN_ERROR');
+      } else {
+        setError(error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -77,6 +83,43 @@ export default function Auth() {
         </div>
 
         <div className="space-y-10">
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className={`p-6 rounded-2xl border ${error === 'DOMAIN_ERROR' ? 'bg-indigo-900 border-indigo-700 text-white' : 'bg-rose-50 border-rose-100 text-rose-600'}`}
+            >
+              <div className="flex items-start gap-4">
+                <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${error === 'DOMAIN_ERROR' ? 'text-amber-400' : 'text-rose-500'}`} />
+                <div className="space-y-2">
+                  <p className="text-sm font-black uppercase tracking-widest leading-none">Security Alert</p>
+                  {error === 'DOMAIN_ERROR' ? (
+                    <div className="space-y-4">
+                      <p className="text-xs font-medium text-indigo-100 leading-relaxed">
+                        This domain is not authorized in your Firebase project. To fix this:
+                      </p>
+                      <ul className="text-[10px] space-y-1 text-indigo-300 font-bold uppercase tracking-wider">
+                        <li>1. Go to Firebase Console</li>
+                        <li>2. Auth &gt; Settings &gt; Authorized Domains</li>
+                        <li>3. Add this domain to the list</li>
+                      </ul>
+                      <a 
+                        href="https://console.firebase.google.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-4 py-2 bg-white text-indigo-900 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-brand-accent transition-all"
+                      >
+                        Open Console
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-xs font-bold leading-relaxed">{error}</p>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           <div className="space-y-4">
             <h2 className="text-2xl font-black text-slate-800 flex items-center justify-center gap-2">
               <span className="w-8 h-1 bg-brand-primary rounded-full" />

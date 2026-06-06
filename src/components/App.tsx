@@ -297,7 +297,7 @@ export default function App() {
             onClick={handleLogoClick}
             className="text-[10px] font-black text-slate-300 uppercase tracking-[0.5em] select-none cursor-default active:opacity-50 transition-opacity"
           >
-            Science Coaching Academy Karak • Created by X.4.MV
+            Science Coaching Academy Karak 
           </p>
         </footer>
       </main>

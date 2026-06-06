@@ -14,6 +14,7 @@ interface NavbarProps {
   badges?: Record<string, number>;
   isAdminUnlocked?: boolean;
   onLogoClick?: () => void;
+  settings?: { logoUrl?: string; academyName?: string };
 }
 
 export default function Navbar({ 
@@ -25,7 +26,8 @@ export default function Navbar({
   showInstallButton, 
   badges = {},
   isAdminUnlocked = false,
-  onLogoClick
+  onLogoClick,
+  settings
 }: NavbarProps) {
   const [showInstallHelp, setShowInstallHelp] = React.useState(false);
   const navItems = [
@@ -45,12 +47,22 @@ export default function Navbar({
     <>
       <header className="md:hidden bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-[40]">
         <div className="flex items-center gap-3 active:scale-95 transition-transform cursor-pointer" onClick={onLogoClick}>
-          <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
-            <GraduationCap className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+            {settings?.logoUrl ? (
+              <img src={settings.logoUrl} alt="SCA Logo" className="w-full h-full object-contain" />
+            ) : (
+              <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-indigo-200 shadow-lg">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+            )}
           </div>
           <div>
-            <h1 className="font-black text-sm leading-tight tracking-tight text-slate-800">SCA KARAK</h1>
-            <p className="text-[8px] text-brand-primary uppercase font-black tracking-widest">Science Academy</p>
+            <h1 className="font-black text-sm leading-tight tracking-tight text-slate-800 uppercase">
+              {settings?.academyName || 'SCA KARAK'}
+            </h1>
+            <p className="text-[8px] text-brand-primary uppercase font-black tracking-widest leading-none">
+              Science Academy
+            </p>
           </div>
         </div>
       </header>
@@ -120,11 +132,19 @@ export default function Navbar({
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-72 bg-brand-secondary flex-col text-white shadow-2xl z-50">
         <div className="p-8">
           <div className="flex items-center gap-3 select-none cursor-pointer" onClick={onLogoClick}>
-            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-inner group">
-              <GraduationCap className="w-8 h-8 text-brand-primary group-hover:scale-110 transition-transform" />
+            <div className="w-14 h-14 flex items-center justify-center group overflow-hidden">
+              {settings?.logoUrl ? (
+                <img src={settings.logoUrl} alt="SCA Logo" className="w-full h-full object-contain group-hover:scale-110 transition-transform" />
+              ) : (
+                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-inner group">
+                  <GraduationCap className="w-8 h-8 text-brand-primary group-hover:scale-110 transition-transform" />
+                </div>
+              )}
             </div>
             <div>
-              <h1 className="font-black text-xl leading-tight tracking-tight">SCA KARAK</h1>
+              <h1 className="font-black text-xl leading-tight tracking-tight uppercase">
+                {settings?.academyName || 'SCA KARAK'}
+              </h1>
               <p className="text-xs text-indigo-300 uppercase font-bold tracking-widest">Science Academy</p>
             </div>
           </div>

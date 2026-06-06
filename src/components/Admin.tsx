@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { db, auth, storage } from '../lib/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { Plus, Video, GraduationCap, FileText, Bell, CheckCircle2, AlertCircle, Trash2, Clock, Calendar, User, Search, Upload, Image as ImageIcon, X, ShieldCheck, Sparkles, Wand2 } from 'lucide-react';
+import { Plus, Video, GraduationCap, FileText, Bell, CheckCircle2, AlertCircle, Trash2, Clock, Calendar, User, Search, Upload, Image as ImageIcon, X, ShieldCheck, Sparkles, Wand2, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { handleFirestoreError, OperationType } from '../lib/errorHandlers';
 import { generateMCQs, GeneratedQuestion, isAiAvailable } from '../services/geminiService';
+import { setDoc } from 'firebase/firestore';
 
-export default function Admin({ user }: { user: any }) {
+export default function Admin({ user, isAdminUnlocked = false, triggerBadge, settings }: { user: any, isAdminUnlocked?: boolean, triggerBadge?: (section: string) => void, settings?: any }) {
   const isAdminUser = user?.email?.toLowerCase().trim() === 'mehaalkhan.2@gmail.com';
   
-  if (!user || !isAdminUser) {
+  if (!isAdminUnlocked && (!user || !isAdminUser)) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center p-6">
         <motion.div 
@@ -36,7 +37,7 @@ export default function Admin({ user }: { user: any }) {
     );
   }
 
-  const [activeTab, setActiveTab] = useState<'lectures' | 'results' | 'notes' | 'quizzes' | 'inquiries' | 'notifications'>('lectures');
+  const [activeTab, setActiveTab] = useState<'lectures' | 'results' | 'notes' | 'quizzes' | 'inquiries' | 'notifications' | 'settings'>('lectures');
   const [loading, setLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -53,6 +54,16 @@ export default function Admin({ user }: { user: any }) {
   const hasAiKey = isAiAvailable();
   const [inquiryResponse, setInquiryResponse] = useState({ inquiryId: '', response: '' });
   const [notifData, setNotifData] = useState({ title: '', message: '', type: 'news' });
+  const [settingsData, setSettingsData] = useState({ logoUrl: '', academyName: 'SCA KARAK' });
+
+  useEffect(() => {
+    if (settings) {
+      setSettingsData({
+        logoUrl: settings.logoUrl || '',
+        academyName: settings.academyName || 'SCA KARAK'
+      });
+    }
+  }, [settings]);
   const [items, setItems] = useState<any[]>([]);
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
@@ -204,6 +215,7 @@ export default function Admin({ user }: { user: any }) {
       setStatus({ type: 'success', message: `DEPLOYMENT SUCCESS: ${count} MCQs added to database!` });
       setAiGeneratedQuestions([]);
       setAiTopic('');
+      if (triggerBadge) triggerBadge('quizzes');
       // Refresh local quizzes list if needed (though onSnapshot handles it)
     } catch (error: any) {
       console.error("Deploy error:", error);
@@ -270,6 +282,7 @@ export default function Admin({ user }: { user: any }) {
       setStatus({ type: 'success', message: 'Practice test portal created successfully! Select it below to add questions.' });
       setQuestionData(prev => ({ ...prev, quizId: docRef.id })); // Auto-select new quiz
       setQuizData({ title: '', classLevel: '9th', subject: 'Physics' });
+      if (triggerBadge) triggerBadge('quizzes');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'quizzes');
       setStatus({ type: 'error', message: 'Failed to create quiz portal.' });
@@ -300,11 +313,60 @@ export default function Admin({ user }: { user: any }) {
       });
       setStatus({ type: 'success', message: 'Question added successfully!' });
       setQuestionData({ ...questionData, question: '', options: ['', '', '', ''], correctAnswerIndex: 0 });
+      if (triggerBadge) triggerBadge('quizzes');
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `quizzes/${questionData.quizId}/questions`);
       setStatus({ type: 'error', message: 'Failed to add question.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setStatus(null);
+    try {
+      await setDoc(doc(db, 'settings', 'app_config'), {
+        ...settingsData,
+        academyName: settingsData.academyName.trim() || 'SCA KARAK',
+        updatedAt: serverTimestamp()
+      });
+      setStatus({ type: 'success', message: 'App configuration updated successfully!' });
+    } catch (error) {
+      console.error(error);
+      handleFirestoreError(error, OperationType.WRITE, 'settings/app_config');
+      setStatus({ type: 'error', message: 'Failed to update settings.' });
+    } finally {
+      setLoading(false);
+      setTimeout(() => setStatus(null), 5000);
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
+    let file: File | null = null;
+    if ('files' in e.target && e.target.files) {
+      file = e.target.files[0];
+    } else if ('dataTransfer' in e) {
+      e.preventDefault();
+      file = e.dataTransfer.files[0];
+    }
+
+    if (file) {
+      if (file.size > 200000) { // Keep logo small (200KB)
+        setStatus({ type: 'error', message: 'Logo too large! Keep it under 200KB.' });
+        return;
+      }
+      
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettingsData(prev => ({ ...prev, logoUrl: reader.result as string }));
+        setIsUploading(false);
+        setStatus({ type: 'success', message: 'New logo ready to save!' });
+        setTimeout(() => setStatus(null), 3000);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -383,6 +445,7 @@ export default function Admin({ user }: { user: any }) {
         }
         await addDoc(collection(db, collectionName), data);
         setStatus({ type: 'success', message: `${activeTab.slice(0, -1)} added successfully!` });
+        if (triggerBadge) triggerBadge(collectionName);
       }
       resetForms();
     } catch (error: any) {
@@ -405,6 +468,7 @@ export default function Admin({ user }: { user: any }) {
     { id: 'quizzes', label: 'Quizzes', icon: ShieldCheck },
     { id: 'inquiries', label: 'Help Desk', icon: Clock },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'settings', label: 'App Settings', icon: Settings },
   ];
 
   return (
@@ -1122,7 +1186,89 @@ export default function Admin({ user }: { user: any }) {
                   </>
                 )}
 
-                {activeTab !== 'quizzes' && (
+                {activeTab === 'settings' && (
+                  <div className="space-y-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+                       <div className="space-y-6">
+                          <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-1">Identity & Branding</h3>
+                           <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-1">Academy Name</label>
+                            <input 
+                              required
+                              type="text" 
+                              value={settingsData.academyName}
+                              onChange={(e) => setSettingsData({...settingsData, academyName: e.target.value})}
+                              placeholder="e.g. Science Coaching Academy"
+                              className="vibrant-input"
+                            />
+                          </div>
+                          <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 italic text-[11px] font-bold text-slate-400 leading-relaxed">
+                            Changing this will update the name in the Sidebar, Mobile Header, and Login screen for all users instantly.
+                          </div>
+                       </div>
+
+                       <div className="space-y-6">
+                          <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest pl-1">Logo / Icon</h3>
+                          <div 
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={handleLogoUpload}
+                            className={`relative border-2 border-dashed rounded-[32px] transition-all aspect-square max-w-[200px] mx-auto flex flex-col items-center justify-center gap-2 overflow-hidden ${
+                              settingsData.logoUrl ? 'border-brand-primary bg-indigo-50/30' : 'border-slate-200 hover:border-brand-primary bg-slate-50'
+                            }`}
+                          >
+                            {isUploading ? (
+                              <div className="flex items-center gap-2 text-brand-primary animate-pulse font-black text-xs">
+                                <Upload className="w-4 h-4 animate-bounce" />
+                                PROCESSING...
+                              </div>
+                            ) : settingsData.logoUrl ? (
+                              <>
+                                <img src={settingsData.logoUrl} className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform" alt="Preview"/>
+                                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 flex justify-center backdrop-blur-sm">
+                                  <button 
+                                    type="button"
+                                    onClick={() => setSettingsData(prev => ({ ...prev, logoUrl: '' }))}
+                                    className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-[9px] font-black text-white"
+                                  >
+                                    RESET TO DEFAULT
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-indigo-100 shadow-xl mb-2">
+                                  <GraduationCap className="w-8 h-8 text-brand-primary" />
+                                </div>
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Click or Drop Logo</span>
+                                <input 
+                                  type="file" 
+                                  accept="image/*"
+                                  onChange={handleLogoUpload}
+                                  className="absolute inset-0 opacity-0 cursor-pointer"
+                                />
+                              </>
+                            )}
+                          </div>
+                          <p className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed px-4">
+                            Square image recommended (PNG/JPG). <br/> Default icon used if empty.
+                          </p>
+                       </div>
+                    </div>
+
+                    <div className="pt-8 border-t border-slate-100 flex justify-end">
+                       <button
+                         type="button"
+                         onClick={handleSaveSettings}
+                         disabled={loading}
+                         className="px-10 py-5 bg-slate-900 text-white rounded-[24px] font-black text-sm uppercase tracking-[0.2em] hover:bg-brand-primary transition-all shadow-2xl shadow-indigo-200 active:scale-95 disabled:opacity-50"
+                       >
+                         {loading ? 'SAVING...' : 'Update Portal Branding'}
+                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab !== 'quizzes' && activeTab !== 'settings' && (
                   <button
                     type="submit"
                     disabled={loading}
@@ -1141,95 +1287,97 @@ export default function Admin({ user }: { user: any }) {
               </form>
 
             {/* Existing Content List */}
-            <div className="mt-16 pt-10 border-t-2 border-slate-50">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-black text-slate-800 tracking-tight">
-                  {`Manage Existing ${activeTab}`}
-                </h3>
-                <span className="px-4 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">
-                  {items.length} Total
-                </span>
-              </div>
+            {activeTab !== 'settings' && (
+              <div className="mt-16 pt-10 border-t-2 border-slate-50">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-black text-slate-800 tracking-tight">
+                    {`Manage Existing ${activeTab}`}
+                  </h3>
+                  <span className="px-4 py-1 bg-slate-100 text-slate-500 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">
+                    {items.length} Total
+                  </span>
+                </div>
 
-              {items.length === 0 ? (
-                <div className="text-center py-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                  <p className="text-slate-400 font-bold">No entries found for this category.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {items.map((item) => (
-                    <div 
-                      key={item.id}
-                      className="bg-slate-50 border border-slate-100 p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group hover:bg-white hover:border-brand-primary/20 hover:shadow-xl transition-all"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-bold text-slate-800 truncate">{item.fullName || item.title || item.studentName}</h4>
-                          {item.classLevel && (
-                            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded text-[10px] font-black uppercase">{item.classLevel}</span>
-                          )}
-                          {item.subject && (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-black uppercase">{item.subject}</span>
-                          )}
-                          {item.id && activeTab === 'quizzes' && (
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${item.questionCount > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                                {item.questionCount || 0} MCQs
-                              </span>
-                              <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded text-[10px] font-black uppercase">Practice Portal</span>
-                              <button 
-                                onClick={() => {
-                                  setQuestionData(prev => ({ ...prev, quizId: item.id }));
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
-                                className="text-[10px] font-black text-indigo-600 hover:underline"
-                              >
-                                + Add MCQ
-                              </button>
-                            </div>
-                          )}
-                          {item.role === 'admin' && (
-                             <span className="px-2 py-0.5 bg-rose-100 text-rose-600 rounded text-[10px] font-black uppercase">Admin</span>
-                          )}
-                          {item.status && (
-                             <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${item.status === 'answered' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
-                               {item.status}
-                             </span>
-                          )}
-                        </div>
-                        {item.question && (
-                          <p className="mt-1 text-xs text-slate-500 italic line-clamp-1">Q: {item.question}</p>
-                        )}
-                        <div className="flex items-center gap-4 text-xs text-slate-400 font-bold mt-2">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {(item.date?.toDate || item.createdAt?.toDate) ? (item.date || item.createdAt).toDate().toLocaleDateString() : 'Just now'}
-                            </span>
-                          {item.studentName && (
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {item.studentName}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deleteLoading === item.id}
-                        className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all disabled:opacity-20"
-                        title="Delete entry"
+                {items.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                    <p className="text-slate-400 font-bold">No entries found for this category.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {items.map((item) => (
+                      <div 
+                        key={item.id}
+                        className="bg-slate-50 border border-slate-100 p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group hover:bg-white hover:border-brand-primary/20 hover:shadow-xl transition-all"
                       >
-                        {deleteLoading === item.id ? (
-                          <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Trash2 className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-bold text-slate-800 truncate">{item.fullName || item.title || item.studentName}</h4>
+                            {item.classLevel && (
+                              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded text-[10px] font-black uppercase">{item.classLevel}</span>
+                            )}
+                            {item.subject && (
+                              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-black uppercase">{item.subject}</span>
+                            )}
+                            {item.id && activeTab === 'quizzes' && (
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${item.questionCount > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                  {item.questionCount || 0} MCQs
+                                </span>
+                                <span className="px-2 py-0.5 bg-brand-primary/10 text-brand-primary rounded text-[10px] font-black uppercase">Practice Portal</span>
+                                <button 
+                                  onClick={() => {
+                                    setQuestionData(prev => ({ ...prev, quizId: item.id }));
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                  }}
+                                  className="text-[10px] font-black text-indigo-600 hover:underline"
+                                >
+                                  + Add MCQ
+                                </button>
+                              </div>
+                            )}
+                            {item.role === 'admin' && (
+                               <span className="px-2 py-0.5 bg-rose-100 text-rose-600 rounded text-[10px] font-black uppercase">Admin</span>
+                            )}
+                            {item.status && (
+                               <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${item.status === 'answered' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                 {item.status}
+                               </span>
+                            )}
+                          </div>
+                          {item.question && (
+                            <p className="mt-1 text-xs text-slate-500 italic line-clamp-1">Q: {item.question}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-xs text-slate-400 font-bold mt-2">
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {(item.date?.toDate || item.createdAt?.toDate) ? (item.date || item.createdAt).toDate().toLocaleDateString() : 'Just now'}
+                              </span>
+                            {item.studentName && (
+                              <span className="flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                {item.studentName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deleteLoading === item.id}
+                          className="p-3 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all disabled:opacity-20"
+                          title="Delete entry"
+                        >
+                          {deleteLoading === item.id ? (
+                            <div className="w-5 h-5 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
 
           {/* New Help Guide */}

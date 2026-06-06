@@ -130,6 +130,12 @@ service cloud.firestore {
              data.date is timestamp;
     }
 
+    function isValidSettings(data) {
+      return (data.has('logoUrl') ? (data.logoUrl is string && data.logoUrl.size() <= 300000) : true) &&
+             (data.has('academyName') ? (data.academyName is string && data.academyName.size() <= 200) : true) &&
+             (data.has('updatedAt') ? data.updatedAt is timestamp : true);
+    }
+
     // --- Collection Rules ---
 
     match /users/{userId} {
@@ -194,6 +200,11 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read: if isSignedIn();
       allow write: if false; 
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidSettings(incoming());
     }
   }
 }

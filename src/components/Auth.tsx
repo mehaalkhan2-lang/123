@@ -5,8 +5,9 @@ import { GraduationCap, ShieldCheck, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useState } from 'react';
 
-export default function Auth() {
+export default function Auth({ settings }: { settings?: { logoUrl?: string; academyName?: string } }) {
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     setLoading(true);
@@ -74,10 +75,16 @@ export default function Auth() {
         className="w-full max-w-xl vibrant-card !p-12 sm:!p-16 relative z-10"
       >
         <div className="text-center mb-12">
-          <div className="w-24 h-24 bg-white rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-2xl relative overflow-hidden group border-4 border-white">
-            <GraduationCap className="w-12 h-12 text-brand-primary group-hover:scale-110 transition-transform" />
+          <div className="w-28 h-28 bg-white rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-2xl relative overflow-hidden group border-4 border-white">
+            {settings?.logoUrl ? (
+              <img src={settings.logoUrl} alt="SCA Logo" className="w-full h-full object-contain group-hover:scale-105 transition-transform" />
+            ) : (
+              <GraduationCap className="w-12 h-12 text-brand-primary group-hover:scale-110 transition-transform" />
+            )}
           </div>
-          <h1 className="text-5xl font-black text-slate-800 tracking-tighter mb-4">SCA KARAK</h1>
+          <h1 className="text-5xl font-black text-slate-800 tracking-tighter mb-4 uppercase">
+            {settings?.academyName || 'SCA KARAK'}
+          </h1>
           <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-sm italic">"The Future is Here"</p>
         </div>
 
